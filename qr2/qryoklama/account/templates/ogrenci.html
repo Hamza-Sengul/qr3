@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+burdasınız
+
+
+<h1 style="text-align: center;">QR Kod Yoklama Sistemi</h1>
+
+<script src="{% static 'js/jsfile.js' %}"></script>
+<style>
+  .result{
+    background-color: green;
+    color:#fff;
+    padding:20px;
+  }
+  .row{
+    display:flex;
+  }
+</style>
+<div class="row">
+  <div class="col">
+    <div style="width:500px;" id="reader"></div>
+  </div>
+  <div class="col" style="padding:30px;">
+    <h4>Kodu Okut</h4>
+    <div id="result">Sonuç</div>
+  </div>
+</div>
+<script type="text/javascript">
+function onScanSuccess(qrCodeMessage) {
+    document.getElementById('result').innerHTML = '<span class="result">'+qrCodeMessage+'</span>';
+
+    // QR kodundan okunan veriyi sunucuya gönderme
+    const csrfToken = getCookie('csrftoken');
+    const data = { data: qrCodeMessage, okul_numarasi: '{{ request.user.username }}' }; // Okul numarasını JavaScript içine gömme
+
+    fetch('/save_qr_data/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to save QR code data');
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log(result); // Sunucudan gelen yanıtı kontrol etme
+    })
+    .catch(error => {
+        console.error('Error saving QR code data:', error);
+    });
+}
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Belirli bir isme sahip çerez var mı kontrol et
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+function onScanError(errorMessage) {
+  //handle scan error
+}
+var html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader", { fps: 10, qrbox: 250 });
+html5QrcodeScanner.render(onScanSuccess, onScanError);
+</script>
+
+<ul>
+    <li><a href="{% url 'logout' %}">Çıkış yap<i class="fa-solid fa-arrow-right-from-bracket"></i></a></li>
+</ul>
+{% endblock %}
